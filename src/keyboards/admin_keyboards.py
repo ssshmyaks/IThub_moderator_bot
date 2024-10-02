@@ -13,10 +13,16 @@ async def admin_keyboard():
                         callback_data="admins"
                     )
                 ],
+                # [
+                #     InlineKeyboardButton(
+                #         text="Старосты ✨",
+                #         callback_data="headman"
+                #     )
+                # ],
                 [
                     InlineKeyboardButton(
-                        text="Старосты ✨",
-                        callback_data="headman"
+                        text="Сообщение от лица бота 🤖 (временно отключено)",
+                        callback_data="msg_from_bot1"
                     )
                 ],
                 [

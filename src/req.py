@@ -29,6 +29,10 @@ class headman_del(StatesGroup):
 	us = State()
 
 
+class message123(StatesGroup):
+	zv = State()
+
+
 def get_admin():
 	cur.execute("SELECT tg FROM admin")
 	result = cur.fetchall()

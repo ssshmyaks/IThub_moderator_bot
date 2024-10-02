@@ -86,8 +86,8 @@ async def admin_addd(message: Message, state: FSMContext, bot: Bot):
             cur.execute("INSERT INTO admin (tg) VALUES (?)", (p['us'],))
             db.commit()
         await message.answer("✅ | Администратор добавлен", reply_markup=await admin_keyboards.admin_keyboard())
-        await bot.promote_chat_member(chat_id='-1002196623720', user_id=p['us'], can_delete_messages=True)
-        await bot.set_chat_administrator_custom_title(chat_id='-1002196623720', user_id=p['us'], custom_title='Администратор')
+        await bot.promote_chat_member(chat_id=config.chat, user_id=p['us'], can_delete_messages=True)
+        await bot.set_chat_administrator_custom_title(chat_id=config.chat, user_id=p['us'], custom_title='Администратор')
         await bot.send_message(p['us'], '😎 | Доступны команды администратора')
         await state.set_state(state=None)
     else:
@@ -123,8 +123,8 @@ async def admin_dell(message: Message, state: FSMContext):
             db.commit()
         await message.answer("✅ | Администратор удален", reply_markup=await admin_keyboards.admin_keyboard())
         await bot.send_message(p['us'], '❌ | Вам больше не доступны команды администратора')
-        await bot.set_chat_administrator_custom_title(chat_id='-1002196623720', user_id=p['us'], custom_title='')
-        await bot.promote_chat_member(chat_id='-1002196623720', user_id=p['us'], can_delete_messages=False)
+        await bot.set_chat_administrator_custom_title(chat_id=config.chat, user_id=p['us'], custom_title='')
+        await bot.promote_chat_member(chat_id=config.chat, user_id=p['us'], can_delete_messages=False)
     else:
         await message.answer("❌ | Неверный пароль", reply_markup=await admin_keyboards.admin_keyboard())
     await state.set_state(state=None)
@@ -145,8 +145,8 @@ async def support_addd(message: Message, state: FSMContext):
     await state.update_data(us=message.text)
     p = await state.get_data()
     await message.answer("✅ | Староста добавлена", reply_markup=await admin_keyboards.admin_keyboard())
-    await bot.promote_chat_member(chat_id='-1002196623720', user_id=p['us'], can_delete_messages=True)
-    await bot.set_chat_administrator_custom_title(chat_id='-1002196623720', user_id=p['us'], custom_title='Староста')
+    await bot.promote_chat_member(chat_id=config.chat, user_id=p['us'], can_delete_messages=True)
+    await bot.set_chat_administrator_custom_title(chat_id=config.chat, user_id=p['us'], custom_title='Староста')
     await state.set_state(state=None)
 
 
@@ -165,8 +165,8 @@ async def support_dell(message: Message, state: FSMContext):
     await state.update_data(us=message.text)
     p = await state.get_data()
     await message.answer("✅ | Староста удалена", reply_markup=await admin_keyboards.admin_keyboard())
-    await bot.set_chat_administrator_custom_title(chat_id='-1002196623720', user_id=p['us'], custom_title='')
-    await bot.promote_chat_member(chat_id='-1002196623720', user_id=p['us'], can_delete_messages=False)
+    await bot.set_chat_administrator_custom_title(chat_id=config.chat, user_id=p['us'], custom_title='')
+    await bot.promote_chat_member(chat_id=config.chat, user_id=p['us'], can_delete_messages=False)
     await state.set_state(state=None)
 
 
@@ -192,7 +192,7 @@ async def admin_panel(call: CallbackQuery):
             'can_send_other_messages': True
         }
         new_permissions = ChatPermissions(**permissions)
-        await bot.set_chat_permissions(chat_id='-1002196623720', permissions=new_permissions)
+        await bot.set_chat_permissions(chat_id=config.chat, permissions=new_permissions)
         await call.message.edit_text("✅ | Чат включен", reply_markup=await admin_keyboards.chat_off())
 
 
@@ -209,7 +209,7 @@ async def admin_panel(call: CallbackQuery):
             'can_send_other_messages': False
         }
         new_permissions = ChatPermissions(**permissions)
-        await bot.set_chat_permissions(chat_id='-1002196623720', permissions=new_permissions)
+        await bot.set_chat_permissions(chat_id=config.chat, permissions=new_permissions)
         await call.message.edit_text("✅ | Чат отключен", reply_markup=await admin_keyboards.chat_on())
 
 
@@ -219,15 +219,38 @@ async def admin_panel(call: CallbackQuery):
     if str(user_id) not in str(admin):
         await call.message.answer('Нет прав ❌')
     else:
-        await call.message.edit_text("Администратор - может контролировать бота\nСтароста - может писать в чат, когда он отключен", reply_markup=await admin_keyboards.back())
+        await call.message.edit_text("Администратор - может контролировать бота", reply_markup=await admin_keyboards.back())
 
 
 @rt.message()
-async def banword_filter(msg: Message):
-    is_mat = None
-    for banword in banwords.ban_list:
-        if banword in msg.text.lower():
-            is_mat = True
-            break
-    if is_mat:
-        await msg.delete()
+async def banword_filter(message: Message):
+    if message.chat.type == 'private':
+        pass
+    else:
+        is_mat = None
+        for banword in banwords.ban_list:
+            if banword in message.text.lower():
+                is_mat = True
+                break
+        if is_mat:
+            await message.delete()
+
+
+@rt.callback_query(F.data == 'msg_from_bot')
+async def message_from_bot(call: CallbackQuery, state: FSMContext):
+    user_id = call.message.chat.id
+    if str(user_id) not in str(admin):
+        await call.message.answer('Нет прав ❌')
+    else:
+        await state.set_state(req.message123.zv)
+        await call.message.edit_text("Напишите сообщение, которое хотите отправить от лица бота (без картинок🥺)", reply_markup=await admin_keyboards.back())
+
+
+@rt.message(req.message123.zv)
+async def message_from_bot_send(message: Message, state: FSMContext):
+    await state.update_data(zv=message.text)
+    p = await state.get_data()
+    text = p['zv']
+    await bot.send_message(chat_id=config.chat, text=text)
+    await message.answer('Сообщение отправлено ✅', reply_markup=await admin_keyboards.back())
+    await state.set_state(state=None)
