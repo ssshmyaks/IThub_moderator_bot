@@ -221,7 +221,7 @@ async def admin_panel(call: CallbackQuery):
     if str(user_id) not in str(admin):
         await call.message.answer('Нет прав ❌')
     else:
-        await call.message.edit_text("", reply_markup=await admin_keyboards.back())
+        await call.message.edit_text("Бот, написанный специально для ITHub группы ИТ-СОИП-24-01", reply_markup=await admin_keyboards.back())
 
 
 @rt.message()
