@@ -1,4 +1,6 @@
+import logging
 import sqlite3 as sq
+from src.database import database
 
 from src.keyboards import admin_keyboards
 from src import req, config, banwords
@@ -13,7 +15,7 @@ bot = Bot(token=config.BOT_TOKEN)
 db = sq.connect(config.database_path)
 cur = db.cursor()
 
-admin = req.get_admin()
+admin = database.get_admin()
 
 
 @rt.message(Command("start"))
@@ -219,38 +221,68 @@ async def admin_panel(call: CallbackQuery):
     if str(user_id) not in str(admin):
         await call.message.answer('Нет прав ❌')
     else:
-        await call.message.edit_text("Администратор - может контролировать бота", reply_markup=await admin_keyboards.back())
+        await call.message.edit_text("", reply_markup=await admin_keyboards.back())
 
 
 @rt.message()
 async def banword_filter(message: Message):
     if message.chat.type == 'private':
-        pass
-    else:
-        is_mat = None
-        for banword in banwords.ban_list:
-            if banword in message.text.lower():
-                is_mat = True
-                break
-        if is_mat:
+        return
+
+    if not message.text:
+        return
+
+    message_text = message.text.lower()
+    is_banword = any(banword in message_text for banword in banwords.ban_list)
+
+    username = message.from_user.username or message.from_user.full_name
+
+    if is_banword:
+        try:
             await message.delete()
+            logging.info(f"Удалено сообщение от пользователя {message.from_user.id} | {username}")
+        except Exception as e:
+            logging.error(f"Не удалось удалить сообщение: {e}")
+
+        ban_count = await database.add_or_update_user(message.from_user.id, username)
+        logging.info(f"Пользователь {username} ({message.from_user.id}) употребил мат {ban_count} раз")
 
 
-@rt.callback_query(F.data == 'msg_from_bot')
-async def message_from_bot(call: CallbackQuery, state: FSMContext):
+@rt.callback_query(F.data == 'banwords')
+async def show_banwords(call: CallbackQuery):
     user_id = call.message.chat.id
     if str(user_id) not in str(admin):
         await call.message.answer('Нет прав ❌')
     else:
-        await state.set_state(req.message123.zv)
-        await call.message.edit_text("Напишите сообщение, которое хотите отправить от лица бота (без картинок🥺)", reply_markup=await admin_keyboards.back())
+        banned_users = await database.get_all_banned_users()
+
+        if not banned_users:
+            await call.message.edit_text("На данный момент нет пользователей, использовавших запрещённые слова. 😥", reply_markup=await admin_keyboards.back())
+            return
+
+        response = "📋 Список пользователей, использовавших запрещённые слова:\n\n"
+        for user in banned_users:
+            user_id, username, ban_count = user
+            response += f"👤 <a href='tg://user?id={user_id}'>{username}</a> — {ban_count}\n"
+
+        await call.message.reply(response, parse_mode="HTML", reply_markup=await admin_keyboards.back())
 
 
-@rt.message(req.message123.zv)
-async def message_from_bot_send(message: Message, state: FSMContext):
-    await state.update_data(zv=message.text)
-    p = await state.get_data()
-    text = p['zv']
-    await bot.send_message(chat_id=config.chat, text=text)
-    await message.answer('Сообщение отправлено ✅', reply_markup=await admin_keyboards.back())
-    await state.set_state(state=None)
+# @rt.callback_query(F.data == 'msg_from_bot')
+# async def message_from_bot(call: CallbackQuery, state: FSMContext):
+#     user_id = call.message.chat.id
+#     if str(user_id) not in str(admin):
+#         await call.message.answer('Нет прав ❌')
+#     else:
+#         await state.set_state(req.message123.zv)
+#         await call.message.edit_text("Напишите сообщение, которое хотите отправить от лица бота (без картинок🥺)", reply_markup=await admin_keyboards.back())
+#
+#
+# @rt.message(req.message123.zv)
+# async def message_from_bot_send(message: Message, state: FSMContext):
+#     await state.update_data(zv=message.text)
+#     p = await state.get_data()
+#     text = p['zv']
+#     await bot.send_message(chat_id=config.chat, text=text)
+#     await message.answer('Сообщение отправлено ✅', reply_markup=await admin_keyboards.back())
+#     await state.set_state(state=None)

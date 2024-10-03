@@ -31,12 +31,3 @@ class headman_del(StatesGroup):
 
 class message123(StatesGroup):
 	zv = State()
-
-
-def get_admin():
-	cur.execute("SELECT tg FROM admin")
-	result = cur.fetchall()
-
-	id_list = [row[0] for row in result]
-
-	return id_list

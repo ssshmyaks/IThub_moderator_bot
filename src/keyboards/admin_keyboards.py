@@ -21,8 +21,8 @@ async def admin_keyboard():
                 # ],
                 [
                     InlineKeyboardButton(
-                        text="Сообщение от лица бота 🤖 (временно отключено)",
-                        callback_data="msg_from_bot1"
+                        text="Показать плохих ребят 😈",
+                        callback_data="banwords"
                     )
                 ],
                 [
