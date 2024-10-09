@@ -265,7 +265,7 @@ async def show_banwords(call: CallbackQuery):
             user_id, username, ban_count = user
             response += f"<a href='tg://user?id={user_id}'>👤 {username}</a> — {ban_count}\n"
 
-        await call.message.reply(response, parse_mode="HTML", reply_markup=await admin_keyboards.back())
+        await call.message.edit_text(response, parse_mode="HTML", reply_markup=await admin_keyboards.back())
 
 
 # @rt.callback_query(F.data == 'msg_from_bot')
