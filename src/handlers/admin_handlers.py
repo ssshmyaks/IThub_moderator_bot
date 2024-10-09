@@ -245,7 +245,7 @@ async def banword_filter(message: Message):
             logging.error(f"Не удалось удалить сообщение: {e}")
 
         ban_count = await database.add_or_update_user(message.from_user.id, username)
-        logging.info(f"Пользователь {username} ({message.from_user.id}) употребил мат {ban_count} раз")
+        logging.info(f"Пользователь {username} ({message.from_user.id}) употребил мат {ban_count} раз | {message.text}")
 
 
 @rt.callback_query(F.data == 'banwords')
@@ -263,7 +263,7 @@ async def show_banwords(call: CallbackQuery):
         response = "📋 Список пользователей, использовавших запрещённые слова:\n\n"
         for user in banned_users:
             user_id, username, ban_count = user
-            response += f"👤 <a href='tg://user?id={user_id}'>{username}</a> — {ban_count}\n"
+            response += f"<a href='tg://user?id={user_id}'>👤 {username}</a> — {ban_count}\n"
 
         await call.message.reply(response, parse_mode="HTML", reply_markup=await admin_keyboards.back())
 
